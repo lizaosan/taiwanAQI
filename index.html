@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.9.0/css/all.min.css">
+</head>
+<body>
+<div class="container"><div class="row"><div class="col-md-12">
+    <div id="app">
+        <h4>台灣城市空氣質量指數</h4>
+        <select name="" id="" class="form-control mb-3" v-model="filter">
+            <option value="all">--- 全部城市 ---</option>
+            <option v-for="(cards, index) in location" :key="index" :value="cards.County">{{ cards.County }}</option>
+        </select>
+        <div>
+            <h4>關注城市</h4>
+            <div class="card-columns">
+                <div class="card status-aqi2">
+                    <div class="card-header">苗栗縣 - 三義
+                        <a href="#" class="float-right"><i class="fas fa-star"></i></a>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled">
+                            <li>AQI 指數: 54</li>
+                            <li>PM2.5: 8</li>
+                            <li>說明: 普通</li>
+                        </ul>
+                    2018-05-20 16:00
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div class="card-columns">
+            <div v-for="(cards, index) in filterCounty" :key="index" :class="[cardStatus(cards.Status), 'card',]">
+                <div class="card-header">{{ cards.County }} - {{ cards.SiteName }}
+                    <a href="#" class="float-right"><i class="far fa-star"></i></a>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li>AQI 指數: {{ cards.AQI }}</li>
+                        <li>PM2.5: {{ cards["PM2.5"] }}</li>
+                        <li>說明: {{ cards.Status }}</li>
+                    </ul>
+                {{ cards.PublishTime }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div></div></div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</body>
+</html>
+
+<script>
+
+let app = new Vue({
+    el: '#app',
+    data: {
+        getJson: [],
+        location: [],
+        stared: [],
+        filter: 'all',
+    },
+    created(){
+
+    },
+    mounted(){
+        this.getData();
+    },
+    methods: {
+        getData() {
+            const that = this;
+            const api = 'http://opendata2.epa.gov.tw/AQI.json';
+
+            $.get(api).then(function(response) {
+                that.getJson = response;
+                console.log(that.getJson)
+                that.getLocation();
+            });
+        },
+        cardStatus(status){
+            let returnClass = '';
+            switch(status) {
+                case '良好' : returnClass = 'status-aqi1';
+                break;
+                case '普通' : returnClass = 'status-aqi2';
+                break;
+                case '對敏感族群不健康' : returnClass = 'status-aqi3';
+                break;
+                case '對所有族群不健康' : returnClass = 'status-aqi4';
+                break;
+                case '非常不健康' : returnClass = 'status-aqi5';
+                break;
+                case '危害' : returnClass = 'status-aqi6';
+                break;
+                case '設備維護' : returnClass = 'status-maintenance';
+                break;
+                default: returnClass = '';
+                break;
+            }
+            return returnClass;
+        },
+        getLocation(){
+            const that = this;
+            let dedupCounty = new Set();
+            that.location = that.getJson.filter(
+                 item => (!dedupCounty.has(item.County) ? dedupCounty.add(item.County) : false)
+            );
+        }
+    },
+    computed: {
+        filterCounty() {
+            const that = this;
+            if (that.filter === 'all'){
+                return that.getJson
+            } else {
+                return that.getJson.filter(item => that.filter == item.County);
+            }
+        }
+    }
+});
+
+</script>
+
+
+<style>
+    .status-aqi1 {
+      background-color: #99FF99;
+    }
+    .status-aqi2 {
+      background-color: #ffff00;
+    }
+    .status-aqi3 {
+      background-color: #ff7e00;
+    }
+    .status-aqi4 {
+      background-color: #ff0000;
+    }
+    .status-aqi5 {
+      background-color: #8f3f97;
+    }
+    .status-aqi6 {
+      background-color: #7e0023;
+    }
+    .status-maintenance {
+      background-color: #DDDDDD;
+    }
+</style>
