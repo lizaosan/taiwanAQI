@@ -122,7 +122,9 @@ let app = new Vue({
             if (that.filter === 'all'){
                 return that.getJson
             } else {
-                return that.getJson.filter(item => that.filter == item.County);
+                return that.getJson.filter(
+                    item => that.filter == item.County
+                );
             }
         }
     }
