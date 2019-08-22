@@ -13,42 +13,34 @@
     <div id="app">
         <h4>台灣城市空氣質量指數</h4>
         <select name="" id="" class="form-control mb-3" v-model="filter">
-            <option value="all">--- 全部城市 ---</option>
+            <option value="全部城市">--- 全部城市 ---</option>
             <option v-for="(cards, index) in location" :key="index" :value="cards.County">{{ cards.County }}</option>
         </select>
         <div>
             <h4>關注城市</h4>
             <div class="card-columns">
-                <div class="card status-aqi2">
-                    <div class="card-header">苗栗縣 - 三義
-                        <a href="#" class="float-right"><i class="fas fa-star"></i></a>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled">
-                            <li>AQI 指數: 54</li>
-                            <li>PM2.5: 8</li>
-                            <li>說明: 普通</li>
-                        </ul>
-                    2018-05-20 16:00
-                    </div>
-                </div>
+                <aqi-component 
+                v-for="(cards, index) in stared"
+                :countysite="cards"
+                @increment='removeStared(cards)'
+                :key="index"
+                :class="[cardStatus(cards.Status), 'card',]">
+                    <template slot="icon">
+                        <i class="fas fa-star"></i>
+                    </template>
+                </aqi-component>
             </div>
         </div>
         <hr>
+        <h4>{{ filter }}</h4>
         <div class="card-columns">
-            <div v-for="(cards, index) in filterCounty" :key="index" :class="[cardStatus(cards.Status), 'card',]">
-                <div class="card-header">{{ cards.County }} - {{ cards.SiteName }}
-                    <a href="#" class="float-right"><i class="far fa-star"></i></a>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled">
-                        <li>AQI 指數: {{ cards.AQI }}</li>
-                        <li>PM2.5: {{ cards["PM2.5"] }}</li>
-                        <li>說明: {{ cards.Status }}</li>
-                    </ul>
-                {{ cards.PublishTime }}
-                </div>
-            </div>
+            <aqi-component 
+            v-for="(cards, index) in filterCounty"
+            :countysite="cards"
+            @increment='addStared(cards)'
+            :key="index"
+            :class="[cardStatus(cards.Status), 'card',]">
+            </aqi-component>
         </div>
     </div>
 </div></div></div>
@@ -59,7 +51,37 @@
 </body>
 </html>
 
+<script type="text/x-template" id="aqiComponentTemplate">
+    <div>
+        <div class="card-header">{{ countysite.County }} - {{ countysite.SiteName }}
+            <a href="#" class="float-right" @click.prevent='focused'>
+                <slot name="icon">
+                    <i class="far fa-star"></i>
+                </slot>
+            </a>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled">
+                <li>AQI 指數: {{ countysite.AQI }}</li>
+                <li>PM2.5: {{ countysite["PM2.5"] }}</li>
+                <li>說明: {{ countysite.Status }}</li>
+            </ul>
+        {{ countysite.PublishTime }}
+        </div>
+    </div>
+</script>
+
 <script>
+
+Vue.component('aqi-component',{
+    props: ['countysite'],
+    template: '#aqiComponentTemplate',
+    methods: {
+        focused() {
+            this.$emit('increment', this.countysite);
+        }
+    }
+})
 
 let app = new Vue({
     el: '#app',
@@ -67,7 +89,8 @@ let app = new Vue({
         getJson: [],
         location: [],
         stared: [],
-        filter: 'all',
+        filter: '全部城市',
+        starClass: false,
     },
     created(){
 
@@ -82,11 +105,11 @@ let app = new Vue({
 
             $.get(api).then(function(response) {
                 that.getJson = response;
-                console.log(that.getJson)
+                // console.log(that.getJson)
                 that.getLocation();
             });
         },
-        cardStatus(status){
+        cardStatus(status) {
             let returnClass = '';
             switch(status) {
                 case '良好' : returnClass = 'status-aqi1';
@@ -108,18 +131,28 @@ let app = new Vue({
             }
             return returnClass;
         },
-        getLocation(){
+        getLocation() {
             const that = this;
             let dedupCounty = new Set();
             that.location = that.getJson.filter(
                  item => (!dedupCounty.has(item.County) ? dedupCounty.add(item.County) : false)
             );
+        },
+        addStared(focusItem) {
+            const that = this;
+            that.stared.push(focusItem);
+            that.filterCounty.splice((that.filterCounty.indexOf(focusItem)),1);
+        },
+        removeStared(focusItem) {
+            const that = this;
+            that.filterCounty.push(focusItem);
+            that.stared.splice((that.stared.indexOf(focusItem)),1);
         }
     },
     computed: {
         filterCounty() {
             const that = this;
-            if (that.filter === 'all'){
+            if (that.filter === '全部城市'){
                 return that.getJson
             } else {
                 return that.getJson.filter(
